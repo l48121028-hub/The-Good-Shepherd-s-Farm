@@ -1,0 +1,741 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>主耶穌基督牧場物語</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=LXGW+WenKai+TC:wght@700&family=Noto+Sans+TC:wght@400;500;700&display=swap">
+<style>
+/* Layout: full-screen 3D pasture; white rounded HUD cards float in the four corners like a studio dashboard. */
+:root{
+  --paper: rgba(255,253,249,.94);
+  --paper-solid:#fffdf9;
+  --ink:#3b3430;
+  --muted:#8b8076;
+  --line:#e4dcd1;
+  --pill:#3a3431;
+  --pill-ink:#fbf6ee;
+  --roof:#c8584a;
+  --wheat:#d9a93f;
+  --leaf:#5f8f4e;
+  --sky:#cfe6ee;
+  --f-title:"LXGW WenKai TC","Noto Serif TC","PMingLiU",serif;
+  --f-body:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;
+  color-scheme: light;
+}
+html,body{height:100%;overflow:hidden}
+body{background:var(--sky);color:var(--ink);font-family:var(--f-body);-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
+#stage{position:fixed;inset:0;touch-action:none}
+#stage canvas{display:block;width:100%;height:100%}
+.hud{position:fixed;left:0;right:0;display:flex;gap:10px;justify-content:space-between;align-items:flex-start;pointer-events:none;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.hud>*{pointer-events:auto}
+#top{top:0;padding-top:calc(12px + env(safe-area-inset-top,0px))}
+#bottom{bottom:0;align-items:flex-end;padding-bottom:calc(12px + env(safe-area-inset-bottom,0px))}
+.col{display:flex;flex-direction:column;gap:8px;min-width:0}
+.card{background:var(--paper);border:1px solid var(--line);border-radius:16px;box-shadow:0 6px 18px rgba(70,55,40,.12);backdrop-filter:blur(6px)}
+.titlebar{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.title{display:flex;align-items:center;gap:8px;padding:8px 14px 8px 10px;font-family:var(--f-title);font-size:20px;letter-spacing:.04em;white-space:nowrap}
+.title svg{flex:none}
+.clock{display:flex;align-items:center;gap:6px;padding:8px 12px;font-size:14px;font-variant-numeric:tabular-nums;color:var(--ink);white-space:nowrap}
+.clock .dot{width:8px;height:8px;border-radius:50%;background:var(--wheat)}
+.log{width:min(360px,calc(100vw - 32px));padding:10px 14px}
+.log-head{display:flex;align-items:center;justify-content:space-between;gap:8px;font-weight:700;font-size:15px}
+.log-head span{display:flex;align-items:center;gap:6px}
+.linkbtn{font:inherit;font-size:13px;font-weight:500;color:var(--muted);background:none;border:0;padding:4px 2px;cursor:pointer}
+.linkbtn:focus-visible,.pillbtn:focus-visible,.seed:focus-visible{outline:2px solid var(--roof);outline-offset:2px}
+.log-list{margin:6px 0 0;padding:0;list-style:none;display:flex;flex-direction:column;gap:4px;font-size:13.5px;line-height:1.55}
+.log-list li{color:var(--ink)}
+.log-list li+li{color:var(--muted)}
+.log-list b{color:var(--roof);font-weight:700}
+.btns{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.pillbtn{font:inherit;font-size:14px;font-weight:500;display:flex;align-items:center;gap:6px;background:var(--pill);color:var(--pill-ink);border:0;border-radius:12px;padding:9px 14px;cursor:pointer;box-shadow:0 4px 12px rgba(40,30,20,.18);white-space:nowrap}
+.pillbtn:active{transform:translateY(1px)}
+.pillbtn.warn{background:var(--roof)}
+.quests{width:min(300px,calc(100vw - 32px));padding:10px 14px}
+.quests h3{margin:0 0 6px;font-size:15px;display:flex;justify-content:space-between;align-items:baseline}
+.quests h3 small{font-weight:500;color:var(--muted);font-size:12.5px;font-variant-numeric:tabular-nums}
+.quests ul{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:5px;font-size:13.5px}
+.quests li{display:flex;gap:8px;align-items:center}
+.quests li i{flex:none;width:14px;height:14px;border-radius:4px;border:1.5px solid var(--leaf)}
+.quests li em{font-style:normal;margin-left:auto;color:var(--muted);font-variant-numeric:tabular-nums}
+.bag{padding:10px 12px;display:flex;flex-direction:column;gap:8px;max-width:calc(100vw - 32px)}
+.bag-row{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.seed{font:inherit;font-size:13px;display:flex;align-items:center;gap:6px;padding:6px 10px;border-radius:10px;border:1.5px solid var(--line);background:var(--paper-solid);color:var(--ink);cursor:pointer;font-variant-numeric:tabular-nums}
+.seed[aria-pressed="true"]{border-color:var(--leaf);background:#eef5e6}
+.chip{font-size:13px;display:flex;align-items:center;gap:5px;padding:4px 8px;color:var(--ink);font-variant-numeric:tabular-nums}
+.sw{width:10px;height:10px;border-radius:3px;flex:none}
+.bag-label{font-size:12px;color:var(--muted);text-align:right}
+#bubbles{position:fixed;inset:0;pointer-events:none;overflow:hidden}
+.bubble{position:absolute;left:0;top:0;transform:translate(-50%,-100%);background:var(--paper-solid);border:1.5px solid #d8cfc3;border-radius:14px;padding:8px 12px 9px;max-width:min(300px,78vw);box-shadow:0 6px 16px rgba(60,45,30,.16);font-size:14.5px;line-height:1.6;color:var(--ink);will-change:transform}
+.bubble::after{content:"";position:absolute;left:50%;bottom:-8px;width:12px;height:12px;background:var(--paper-solid);border-right:1.5px solid #d8cfc3;border-bottom:1.5px solid #d8cfc3;transform:translateX(-50%) rotate(45deg)}
+.bubble .who{font-size:12px;color:var(--muted);margin-bottom:2px}
+.bubble .more{font-size:12px;color:var(--roof);margin-top:4px;text-align:right}
+.bubble.small{font-size:13px;padding:5px 10px}
+.pop{position:absolute;left:0;top:0;font-weight:700;font-size:15px;color:var(--ink);text-shadow:0 1px 0 #fff,0 0 6px #fff;transform:translate(-50%,-100%);white-space:nowrap}
+#sleep{position:fixed;inset:0;background:#2b2f45;color:#f6efe3;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;text-align:center;opacity:0;pointer-events:none;transition:opacity .7s ease;padding-left:max(24px,env(safe-area-inset-left,0px));padding-right:max(24px,env(safe-area-inset-right,0px))}
+#sleep.on{opacity:1;pointer-events:auto}
+#sleep h2{font-family:var(--f-title);font-size:34px;margin:0;letter-spacing:.1em}
+#sleep p{margin:0;max-width:30em;line-height:1.8;font-size:15px;color:#d9d3e6;text-wrap:balance}
+@media (max-width:640px){
+  .title{font-size:17px}
+  #top{flex-direction:column}
+  .btns{justify-content:flex-start}
+  #bottom{flex-direction:column;align-items:stretch}
+  .quests,.log{width:auto}
+  .bag-row{justify-content:flex-start}
+  .bag-label{text-align:left}
+  .log-list li+li{display:none}
+  .log.open .log-list li+li{display:list-item}
+}
+@media (max-height:500px){
+  .log-list li+li{display:none}
+  .log.open .log-list li+li{display:list-item}
+  .quests ul li:nth-child(n+3){display:none}
+}
+@media (prefers-reduced-motion:reduce){#sleep{transition:none}}
+</style>
+</head>
+<body>
+
+<div id="stage" aria-label="牧場場景：點地面走路，點田地、羊和人物互動"></div>
+<div id="bubbles"></div>
+
+<div class="hud" id="top">
+  <div class="col">
+    <div class="titlebar">
+      <div class="card title">
+        <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 22V9a5 5 0 1 1 10 0v1.5" fill="none" stroke="#8a5a3a" stroke-width="2.4" stroke-linecap="round"/></svg>
+        主耶穌基督牧場物語
+      </div>
+      <div class="card clock" id="clock"><span class="dot"></span><span id="clockText">第 1 天 06:00</span></div>
+    </div>
+    <div class="card log" id="logCard">
+      <div class="log-head"><span>
+        <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h11l3 3v13H5z" fill="none" stroke="#5f8f4e" stroke-width="2"/><path d="M8 10h8M8 14h8M8 18h5" stroke="#5f8f4e" stroke-width="2"/></svg>
+        牧場日誌</span>
+        <button class="linkbtn" id="logToggle" aria-expanded="false">展開</button>
+      </div>
+      <ul class="log-list" id="logList"></ul>
+    </div>
+  </div>
+  <div class="btns">
+    <button class="pillbtn" id="btnHome">
+      <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l9-7 9 7v9H3z" fill="none" stroke="currentColor" stroke-width="2"/></svg>回家休息</button>
+    <button class="pillbtn" id="btnReset">重新開始</button>
+  </div>
+</div>
+
+<div class="hud" id="bottom">
+  <div class="card quests">
+    <h3>今日任務 <small id="questCount">0/8 完成</small></h3>
+    <ul id="questList"></ul>
+  </div>
+  <div class="card bag">
+    <div class="bag-label">要種的種子</div>
+    <div class="bag-row">
+      <button class="seed" id="seedWheat" aria-pressed="true"><span class="sw" style="background:#d9a93f"></span>小麥種子 <b id="nWheatSeed">6</b></button>
+      <button class="seed" id="seedMustard" aria-pressed="false"><span class="sw" style="background:#9fbf5a"></span>芥菜種 <b id="nMustardSeed">1</b></button>
+    </div>
+    <div class="bag-row">
+      <span class="chip"><span class="sw" style="background:#e7c35a"></span>小麥 <b id="nWheat">0</b></span>
+      <span class="chip"><span class="sw" style="background:#7fae4e"></span>芥菜 <b id="nMustard">0</b></span>
+      <span class="chip"><span class="sw" style="background:#c98a52"></span>餅 <b id="nBread">0</b></span>
+    </div>
+  </div>
+</div>
+
+<div id="sleep" aria-live="polite"><h2 id="sleepTitle">第 2 天</h2><p id="sleepVerse"></p></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function(){
+"use strict";
+const $=id=>document.getElementById(id);
+const PI=Math.PI;
+const rand=(a,b)=>a+Math.random()*(b-a);
+let seedN=7;const srand=()=>{seedN=(seedN*16807)%2147483647;return (seedN-1)/2147483646};
+
+/* ---------------- data ---------------- */
+const CROPS={wheat:{name:'小麥',seed:'wheatSeed',max:2},mustard:{name:'芥菜',seed:'mustardSeed',max:3}};
+const QUESTS=[
+ {id:'talkJesus',text:'到井邊和耶穌說話'},
+ {id:'harvest3',text:'收成 3 束小麥',goal:3,c:'harvestedWheat'},
+ {id:'plant3',text:'種下 3 顆種子',goal:3,c:'planted'},
+ {id:'water3',text:'為 3 塊田澆水',goal:3,c:'watered'},
+ {id:'lostSheep',text:'找回那一隻迷途的羊'},
+ {id:'giveMartha',text:'帶 3 束小麥給馬大'},
+ {id:'talkPeter',text:'到湖邊找彼得'},
+ {id:'mustard',text:'種下芥菜種，等它長成樹'}
+];
+const JESUS_VERSES=[
+ '我是好牧人；我認識我的羊，我的羊也認識我。（約翰福音 10:14）',
+ '凡勞苦擔重擔的人可以到我這裡來，我就使你們得安息。（馬太福音 11:28）',
+ '一粒麥子不落在地裡死了，仍舊是一粒；若是死了，就結出許多子粒來。（約翰福音 12:24）',
+ '天國好像一粒芥菜種，有人拿去種在田裡。（馬太福音 13:31）',
+ '你們看那天上的飛鳥，也不種，也不收，也不積蓄在倉裡，你們的天父尚且養活牠。（馬太福音 6:26）',
+ '我是葡萄樹，你們是枝子。（約翰福音 15:5）',
+ '我的羊聽我的聲音，我也認識他們，他們也跟著我。（約翰福音 10:27）'
+];
+const NIGHT_VERSES=[
+ '他使我躺臥在青草地上，領我在可安歇的水邊。（詩篇 23:2）',
+ '每早晨，這都是新的；你的誠實極其廣大！（耶利米哀歌 3:23）',
+ '耶和華是我的牧者，我必不致缺乏。（詩篇 23:1）'
+];
+const GROW_VERSE='我栽種了，亞波羅澆灌了，惟有神叫他生長。（哥林多前書 3:6）';
+
+function freshState(){
+  const plots=[];
+  for(let i=0;i<12;i++)plots.push({state:i<6?'tilled':'grass',crop:null,stage:0,watered:false});
+  Object.assign(plots[0],{state:'planted',crop:'wheat',stage:2});
+  Object.assign(plots[1],{state:'planted',crop:'wheat',stage:2});
+  Object.assign(plots[2],{state:'planted',crop:'wheat',stage:1});
+  return {v:1,day:1,min:360,seed:'wheat',
+    inv:{wheatSeed:6,mustardSeed:1,wheat:0,mustard:0,bread:0},
+    plots,lost:'lost',q:{},c:{planted:0,watered:0,harvestedWheat:0},
+    jt:0,pt:0,mt:0,log:['點地面走路，點田地、羊和人物就能互動。耶穌在井邊等你。']};
+}
+let S=freshState();
+const SAVE_KEY='good-shepherd-farm-v1';
+function load(){try{const t=localStorage.getItem(SAVE_KEY);if(t){const d=JSON.parse(t);if(d&&d.v===1)return d}}catch(e){}return null}
+let saveT=0;function save(){clearTimeout(saveT);saveT=setTimeout(()=>{try{localStorage.setItem(SAVE_KEY,JSON.stringify(S))}catch(e){}},300)}
+
+/* ---------------- three setup ---------------- */
+const stage=$('stage');
+const renderer=new THREE.WebGLRenderer({antialias:true});
+renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2));
+renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+stage.appendChild(renderer.domElement);
+const scene=new THREE.Scene();
+const skyCol=new THREE.Color(0xcfe6ee);
+scene.background=skyCol.clone();
+scene.fog=new THREE.Fog(skyCol.clone(),30,70);
+const camera=new THREE.PerspectiveCamera(38,1,0.1,200);
+const hemi=new THREE.HemisphereLight(0xfff8ec,0xb9d4a6,0.75);scene.add(hemi);
+const sun=new THREE.DirectionalLight(0xfff0d8,0.8);
+sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);
+const sc=sun.shadow.camera;sc.left=-15;sc.right=15;sc.top=15;sc.bottom=-15;sc.near=1;sc.far=60;
+sun.shadow.bias=-0.0015;sun.shadow.normalBias=0.03;sun.shadow.radius=3;
+scene.add(sun);scene.add(sun.target);
+
+const mats={},matsD={};
+const M=c=>mats[c]||(mats[c]=new THREE.MeshLambertMaterial({color:c}));
+const MD=c=>matsD[c]||(matsD[c]=new THREE.MeshLambertMaterial({color:c,side:THREE.DoubleSide}));
+function mesh(geo,color,x=0,y=0,z=0,o={}){
+  const m=new THREE.Mesh(geo,o.double?MD(color):M(color));
+  m.position.set(x,y,z);m.castShadow=o.cast!==false;m.receiveShadow=true;return m;
+}
+const sph=(r,w=20,h=14)=>new THREE.SphereGeometry(r,w,h);
+const cyl=(a,b,h,s=20)=>new THREE.CylinderGeometry(a,b,h,s);
+
+/* ---------------- world ---------------- */
+const clickables=[];
+const obstacles=[]; // circles {x,z,r}
+const ground=mesh(new THREE.PlaneGeometry(120,120),0x9fcf7f,0,0,0,{cast:false});
+ground.rotation.x=-PI/2;scene.add(ground);
+
+// meadow patches for layered greens
+for(let i=0;i<40;i++){
+  const p=mesh(new THREE.CircleGeometry(rand(1.2,3.2),24),[0x97c877,0xa8d688,0x8fc070][i%3],rand(-22,22),0.005,rand(-18,15),{cast:false});
+  p.rotation.x=-PI/2;scene.add(p);
+}
+function path(x1,z1,x2,z2,w=1.3){
+  const dx=x2-x1,dz=z2-z1,len=Math.hypot(dx,dz);
+  const p=mesh(new THREE.BoxGeometry(w,0.03,len+w*0.6),0xe6d3a7,(x1+x2)/2,0.015,(z1+z2)/2,{cast:false});
+  p.rotation.y=Math.atan2(dx,dz);scene.add(p);
+  const c=mesh(new THREE.CylinderGeometry(w/2,w/2,0.03,20),0xe6d3a7,x2,0.016,z2,{cast:false});scene.add(c);
+}
+path(-8,-3.4,-1,0.5);path(-1,0.5,8.7,-1);path(-1,0.5,8.6,6.5);path(-1,0.5,0,-4.6,1.1);path(-7.2,-1.6,-7,0.8,1.1);
+
+// hills
+[[-26,-6,-22,11,0x8fbe72],[-8,-7,-27,12,0x86b56a],[12,-6,-26,12,0x93c276],[28,-6,-12,11,0x89b86c],[30,-7,8,11,0x96c47a],[-30,-7,6,11,0x8bba6e],[-20,-5,20,9,0x9ccb80],[16,-6,22,10,0x8fbf74]].forEach(h=>{
+  const m=mesh(sph(h[3],32,20),h[4],h[0],h[1],h[2],{cast:false});m.scale.y=0.75;scene.add(m);
+});
+
+function tree(x,z,s=1){
+  const g=new THREE.Group();g.position.set(x,0,z);
+  const t=mesh(cyl(0.12*s,0.2*s,1.2*s,10),0x8a6748,0,0.6*s,0);t.rotation.z=0.12;g.add(t);
+  [[0,1.55,0,0.8],[0.5,1.35,0.2,0.6],[-0.45,1.4,-0.1,0.62],[0.1,1.95,-0.15,0.55]].forEach((c,i)=>{
+    g.add(mesh(sph(c[3]*s,18,12),[0x9db985,0x8dab78,0xa8c391,0x94b27f][i],c[0]*s,c[1]*s,c[2]*s));
+  });
+  scene.add(g);obstacles.push({x,z,r:0.55*s});return g;
+}
+[[2.6,-7.6,1.1],[-13,-9,1],[-14.5,4.5,1.2],[15.5,-4,1],[-3,9.5,1.1],[5.5,10.5,1],[-17,-5.5,1.2],[17,3.5,1.1],[-11,10.5,1],[16,11,1.2],[-18.5,-13,1.3],[-12.5,-14.5,1.1],[-17,-16,1],[-6,-12,1]].forEach(t=>tree(t[0],t[1],t[2]));
+
+function bush(x,z,s=1){const g=new THREE.Group();g.position.set(x,0,z);
+  [[0,0.3,0,0.45],[0.35,0.25,0.1,0.35],[-0.3,0.22,0.05,0.33]].forEach(c=>g.add(mesh(sph(c[3]*s,14,10),0x7fa865,c[0]*s,c[1]*s,c[2]*s)));scene.add(g)}
+[[-15,-11.5],[-14.2,-13.8],[-16.8,-14.2],[3.5,-4.5],[-10.5,-3.5],[11,4],[-2,6],[6.5,3]].forEach(b=>bush(b[0],b[1],rand(0.8,1.2)));
+
+// flowers
+for(let i=0;i<90;i++){
+  const x=srand()*40-20,z=srand()*30-16;
+  if(x>3.5&&x<13.5&&z>-10.5&&z<-1)continue;
+  if(x>-10.5&&x<-3.8&&z>0.5&&z<5.5)continue;
+  const f=mesh(sph(0.07,8,6),[0xf6f0e3,0xf2c94c,0xe89aa6,0xb9a3d9][i%4],x,0.07,z,{cast:false});scene.add(f);
+}
+
+// house
+const house=new THREE.Group();house.position.set(-8,0,-6.2);
+house.add(mesh(new THREE.BoxGeometry(4,2.2,3.2),0xf4eee4,0,1.1,0));
+const prism=(r,len)=>new THREE.CylinderGeometry(r,r,len,3).rotateZ(PI/2).rotateX(-PI/2);
+const roof=mesh(prism(2.1,4.6),0xc8584a,0,2.7,0);roof.scale.set(1,0.62,1.08);house.add(roof);
+house.add(mesh(new THREE.BoxGeometry(0.9,1.4,0.1),0x8a5a3a,0,0.7,1.62));
+house.add(mesh(sph(0.06,8,6),0xe2b84f,0.3,0.7,1.69));
+[-1.3,1.3].forEach(x=>{house.add(mesh(new THREE.BoxGeometry(0.7,0.6,0.08),0x9cc6d6,x,1.35,1.61));house.add(mesh(new THREE.BoxGeometry(0.85,0.08,0.14),0x8a5a3a,x,1.02,1.63))});
+house.add(mesh(new THREE.BoxGeometry(0.5,0.9,0.5),0xb9a99a,1.1,3.0,-0.4));
+house.userData={kind:'house'};
+scene.add(house);clickables.push(house);obstacles.push({x:-8,z:-6.2,r:2.4});
+
+// well
+const well=new THREE.Group();well.position.set(0,0,-6.2);
+well.add(mesh(cyl(0.75,0.8,0.7,20),0xb9b2a6,0,0.35,0));
+well.add(mesh(cyl(0.6,0.6,0.72,20),0x6f8fa0,0,0.37,0,{cast:false}));
+[-0.7,0.7].forEach(x=>well.add(mesh(cyl(0.06,0.06,1.6,8),0x8a6748,x,1.1,0)));
+const wr=mesh(prism(0.9,1.8),0xc8584a,0,2.05,0);wr.scale.set(1,0.5,0.75);well.add(wr);
+scene.add(well);obstacles.push({x:0,z:-6.2,r:1});
+
+// pond
+const pond=new THREE.Group();pond.position.set(12.5,0,8.5);
+const sand=mesh(cyl(3.5,3.6,0.05,40),0xe8dcb8,0,0.02,0,{cast:false});pond.add(sand);
+const water=mesh(cyl(3.1,3.1,0.06,40),0x86c3d6,0,0.04,0,{cast:false});pond.add(water);
+const boat=new THREE.Group();boat.position.set(0.6,0.12,0.4);boat.rotation.y=0.6;
+const hull=mesh(new THREE.CylinderGeometry(0.42,0.42,1.6,12,1,false,0,PI),0x9a6b45,0,0,0,{double:true});hull.rotation.set(PI/2,0,PI/2);boat.add(hull);
+pond.add(boat);scene.add(pond);obstacles.push({x:12.5,z:8.5,r:3.2});
+[[10,10.8],[10.6,11.4],[9.6,10.2]].forEach(r=>{const g=mesh(cyl(0.03,0.03,0.9,6),0x6f9a55,r[0],0.45,r[1]);scene.add(g)});
+
+// sheep pen
+const PEN={x0:4,x1:13,z0:-10,z1:-1.5,g0:7.8,g1:9.6};
+function rail(x1,z1,x2,z2){
+  const dx=x2-x1,dz=z2-z1,len=Math.hypot(dx,dz);
+  [0.35,0.7].forEach(y=>{const r=mesh(new THREE.BoxGeometry(0.08,0.08,len),0xd9c3a0,(x1+x2)/2,y,(z1+z2)/2);r.rotation.y=Math.atan2(dx,dz);scene.add(r)});
+  const n=Math.max(1,Math.round(len/1.5));
+  for(let i=0;i<=n;i++){const t=i/n;scene.add(mesh(cyl(0.09,0.1,0.95,8),0xb89a72,x1+dx*t,0.47,z1+dz*t))}
+}
+rail(PEN.x0,PEN.z0,PEN.x1,PEN.z0);rail(PEN.x0,PEN.z0,PEN.x0,PEN.z1);rail(PEN.x1,PEN.z0,PEN.x1,PEN.z1);
+rail(PEN.x0,PEN.z1,PEN.g0,PEN.z1);rail(PEN.g1,PEN.z1,PEN.x1,PEN.z1);
+const trough=mesh(new THREE.BoxGeometry(1.6,0.35,0.5),0x9a6b45,11.5,0.18,-9.2);scene.add(trough);
+scene.add(mesh(new THREE.BoxGeometry(1.4,0.06,0.36),0xe3c56b,11.5,0.37,-9.2,{cast:false}));
+
+/* ---------------- characters ---------------- */
+const HEAD_R=0.4,HEAD_Y=1.05;
+function onHead(x,dy,lift=0){const z=Math.sqrt(Math.max(0,HEAD_R*HEAD_R-x*x-dy*dy))+lift;return [x,HEAD_Y+dy,z]}
+function makeChar(o){
+  const g=new THREE.Group(),b=new THREE.Group();g.add(b);
+  const skin=o.skin||0xf6d5bb;
+  [-0.12,0.12].forEach(x=>b.add(mesh(sph(0.1,12,8),o.shoe||0x6b4a3a,x,0.07,0.05)));
+  if(o.robe){b.add(mesh(cyl(0.21,0.37,0.68,22),o.shirt,0,0.4,0))}
+  else{b.add(mesh(cyl(0.18,0.24,0.22,18),o.pants||0x6b5d52,0,0.17,0));b.add(mesh(cyl(0.21,0.29,0.42,20),o.shirt,0,0.47,0))}
+  if(o.sash){const s=mesh(new THREE.TorusGeometry(0.27,0.045,8,28),o.sash,0,0.55,0);s.rotation.set(PI/2-0.15,0.5,0);s.scale.set(1,1.15,1);b.add(s);
+    const d=mesh(cyl(0.05,0.11,0.5,10),o.sash,-0.2,0.38,-0.12);d.rotation.z=0.25;b.add(d)}
+  [-1,1].forEach(s=>{const h=mesh(sph(0.085,12,8),skin,0.3*s,0.43,0.06);b.add(h)});
+  b.add(mesh(sph(HEAD_R,28,20),skin,0,HEAD_Y,0));
+  // face
+  [-1,1].forEach(s=>{
+    const p=onHead(0.13*s,0.04,-0.02);const e=mesh(sph(0.058,14,10),0x2b2422,...p,{cast:false});e.scale.set(0.9,1.1,0.55);b.add(e);
+    const hl=mesh(sph(0.02,8,6),0xffffff,p[0]+0.018,p[1]+0.025,p[2]+0.03,{cast:false});b.add(hl);
+    const q=onHead(0.22*s,-0.07,-0.02);const bl=mesh(sph(0.065,12,8),0xf3a6a0,...q,{cast:false});bl.scale.set(1,0.6,0.35);b.add(bl);
+  });
+  const mp=onHead(0,-0.08,-0.005);const mo=mesh(new THREE.TorusGeometry(0.035,0.011,6,14,PI),0x7a3f37,...mp,{cast:false});mo.rotation.z=PI;b.add(mo);
+  // hair
+  const hc=o.hair;
+  if(o.style!=='none'){
+    const cap=mesh(new THREE.SphereGeometry(HEAD_R+0.025,28,16,0,PI*2,0,PI*0.5),hc,0,HEAD_Y,0,{double:true});cap.rotation.x=-0.38;b.add(cap);
+    if(o.style==='long'||o.style==='scarf'){
+      const back=mesh(new THREE.SphereGeometry(HEAD_R+0.035,24,16,PI,PI,PI*0.25,PI*0.55),hc,0,HEAD_Y,0,{double:true});back.scale.set(1.04,1.12,1.05);back.position.y=HEAD_Y-0.04;b.add(back);
+      [-1,1].forEach(s=>{const lock=mesh(sph(0.12,12,10),hc,0.33*s,HEAD_Y-0.2,-0.05);lock.scale.set(0.7,1.5,0.9);b.add(lock)});
+    }
+    if(o.style==='bun'){b.add(mesh(sph(0.15,14,10),hc,0,HEAD_Y+0.32,-0.25))}
+  }
+  if(o.beard){const bd=mesh(new THREE.SphereGeometry(HEAD_R+0.02,24,12,0,PI,PI*0.66,PI*0.26),o.beard,0,HEAD_Y,0,{double:true});bd.rotation.y=PI;b.add(bd);
+    const ms=mesh(sph(0.07,10,8),o.beard,...onHead(0,-0.045,0.0),{cast:false});ms.scale.set(1.6,0.5,0.5);b.add(ms);mo.visible=false;}
+  if(o.hat==='straw'){const hat=new THREE.Group();hat.position.set(0,HEAD_Y+0.3,-0.06);hat.rotation.x=-0.3;hat.add(mesh(cyl(0.52,0.54,0.04,28),0xe8c773,0,0,0));hat.add(mesh(cyl(0.28,0.32,0.22,24),0xe8c773,0,0.12,0));hat.add(mesh(cyl(0.325,0.325,0.07,24),0xc8584a,0,0.05,0));b.add(hat)}
+  if(o.hat==='band'){const t=mesh(new THREE.TorusGeometry(HEAD_R+0.02,0.045,8,28),o.band,0,HEAD_Y+0.16,-0.02);t.rotation.x=PI/2+0.38;b.add(t)}
+  g.userData.body=b;
+  return g;
+}
+
+const player=makeChar({hair:0xb5653a,style:'short',hat:'straw',shirt:0x5fa58e,pants:0x6b5d52});
+player.position.set(-1,0,2.5);scene.add(player);
+
+const NPC={};
+function addNPC(id,name,role,o,x,z,face){
+  const g=makeChar(o);g.position.set(x,0,z);g.rotation.y=face;g.userData.kind='npc';g.userData.id=id;
+  scene.add(g);clickables.push(g);obstacles.push({x,z,r:0.5});
+  NPC[id]={g,name,role,home:face,x,z};
+}
+addNPC('jesus','耶穌','好牧人',{skin:0xe5bd98,hair:0x6b4630,style:'long',beard:0x5e3e2a,robe:true,shirt:0xf3eee3,sash:0xb3453c,shoe:0x8a6748},1.6,-5.2,-0.4);
+addNPC('peter','彼得','漁夫',{skin:0xe0b48f,hair:0x3d3330,style:'short',beard:0x4a403a,shirt:0x5b7fa6,pants:0x6d5b4b,hat:'band',band:0xe8dfcc},8.6,6.8,0.8);
+addNPC('martha','馬大','廚房',{skin:0xf0cdb0,hair:0xd47a5a,style:'scarf',robe:true,shirt:0x9a7bb0,shoe:0x7a5a40},-5.4,-3.4,0.3);
+
+// sheep
+function makeSheep(){
+  const g=new THREE.Group(),b=new THREE.Group();g.add(b);
+  const wool=0xfbf8f1;
+  const core=mesh(sph(0.42,20,14),wool,0,0.55,0);core.scale.set(1,0.85,1.25);b.add(core);
+  [[0.28,0.72,0.25],[-0.28,0.72,0.25],[0.3,0.7,-0.3],[-0.3,0.7,-0.3],[0,0.86,0],[0,0.62,-0.5],[0,0.8,0.35]].forEach(p=>b.add(mesh(sph(0.24,14,10),wool,...p)));
+  const head=new THREE.Group();head.position.set(0,0.7,0.58);b.add(head);
+  const hd=mesh(sph(0.2,16,12),0x5a4a42,0,0,0);hd.scale.set(0.9,1,1.05);head.add(hd);
+  head.add(mesh(sph(0.13,12,10),wool,0,0.15,-0.04));
+  [-1,1].forEach(s=>{const e=mesh(sph(0.08,10,8),0x5a4a42,0.2*s,0.02,-0.05);e.scale.set(1.4,0.6,0.8);head.add(e);
+    head.add(mesh(sph(0.03,8,6),0xffffff,0.08*s,0.04,0.17,{cast:false}));head.add(mesh(sph(0.018,8,6),0x1f1a18,0.085*s,0.04,0.195,{cast:false}))});
+  [[0.2,0.25],[-0.2,0.25],[0.2,-0.3],[-0.2,-0.3]].forEach(p=>b.add(mesh(cyl(0.06,0.055,0.34,8),0x5a4a42,p[0],0.17,p[1])));
+  g.userData.body=b;g.userData.head=head;
+  return g;
+}
+const flock=[];
+function addSheep(x,z,lost){
+  const g=makeSheep();g.position.set(x,0,z);g.rotation.y=rand(0,PI*2);scene.add(g);
+  const s={g,tx:x,tz:z,wait:rand(0,3),lost:!!lost,speed:rand(0.5,0.8),phase:rand(0,6)};
+  g.userData.kind='sheep';g.userData.ref=s;clickables.push(g);flock.push(s);return s;
+}
+for(let i=0;i<6;i++)addSheep(rand(5,12),rand(-9,-3));
+const lostSheep=addSheep(-15.8,-12.8,true);
+
+/* ---------------- farm plots ---------------- */
+const plots=[];
+for(let r=0;r<3;r++)for(let c=0;c<4;c++){
+  const x=-9.2+c*1.55,z=1.5+r*1.55;
+  const g=new THREE.Group();g.position.set(x,0,z);g.userData={kind:'plot',ref:plots.length};
+  scene.add(g);clickables.push(g);plots.push({g,x,z});
+}
+function plantMesh(crop,stage){
+  const g=new THREE.Group();
+  if(stage===0){for(let i=0;i<3;i++)g.add(mesh(sph(0.06,8,6),0x6b4a30,-0.3+i*0.3,0.1,0));return g}
+  if(crop==='wheat'){
+    if(stage===1){for(let i=0;i<6;i++){const c=mesh(new THREE.ConeGeometry(0.06,0.42,6),0x7fbf55,-0.35+(i%3)*0.35,0.26,i<3?-0.2:0.2);c.rotation.z=rand(-0.2,0.2);g.add(c)}return g}
+    for(let i=0;i<9;i++){const x=-0.36+(i%3)*0.36,z=-0.32+Math.floor(i/3)*0.32;
+      const st=mesh(cyl(0.025,0.03,0.8,6),0xc9a650,x,0.42,z);st.rotation.z=rand(-0.12,0.12);g.add(st);
+      const ear=mesh(sph(0.08,10,8),0xe4b84e,x+st.rotation.z*-0.4,0.88,z);ear.scale.set(0.8,2.1,0.8);g.add(ear)}
+    return g;
+  }
+  // mustard
+  if(stage===1){for(let i=0;i<2;i++){const l=mesh(sph(0.1,10,8),0x86c25a,-0.12+i*0.24,0.15,0);l.scale.set(1,0.5,1.6);g.add(l)}return g}
+  if(stage===2){g.add(mesh(cyl(0.04,0.06,0.5,8),0x6e8f45,0,0.25,0));[[0,0.6,0,0.3],[0.22,0.45,0.1,0.22],[-0.2,0.48,-0.08,0.22]].forEach(c=>g.add(mesh(sph(c[3],14,10),0x8cbf5a,c[0],c[1],c[2])));return g}
+  g.add(mesh(cyl(0.07,0.11,1.0,8),0x7a5c3f,0,0.5,0));
+  [[0,1.25,0,0.5],[0.36,1.05,0.1,0.36],[-0.34,1.08,-0.1,0.36],[0.05,1.62,-0.05,0.34]].forEach(c=>g.add(mesh(sph(c[3],16,12),0x8fbe58,c[0],c[1],c[2])));
+  for(let i=0;i<12;i++){const a=i*2.4,r=0.42+(i%3)*0.08;g.add(mesh(sph(0.05,6,5),0xf2d04a,Math.cos(a)*r*0.9,1.15+(i%4)*0.15,Math.sin(a)*r*0.9,{cast:false}))}
+  [[0.32,1.62,0.18],[-0.3,1.48,0.25]].forEach((p,i)=>{const bd=new THREE.Group();bd.position.set(...p);bd.rotation.y=i?0.6:-0.4;
+    bd.add(mesh(sph(0.09,10,8),i?0x8a6a52:0x6b8fb0,0,0,0));bd.add(mesh(sph(0.06,10,8),i?0x8a6a52:0x6b8fb0,0,0.08,0.06));
+    const bk=mesh(new THREE.ConeGeometry(0.025,0.07,6),0xe2a33a,0,0.08,0.13);bk.rotation.x=PI/2;bd.add(bk);g.add(bd)});
+  return g;
+}
+function rebuildPlot(i){
+  const p=plots[i],st=S.plots[i],g=p.g;
+  while(g.children.length)g.remove(g.children[0]);
+  if(st.state==='grass'){const m=mesh(new THREE.BoxGeometry(1.35,0.03,1.35),0x8cbd6c,0,0.02,0,{cast:false});g.add(m);
+    const e=mesh(new THREE.BoxGeometry(1.45,0.02,1.45),0x84b266,0,0.012,0,{cast:false});g.add(e);return}
+  const col=st.watered?0x7d5a3c:0xa97f58;
+  g.add(mesh(new THREE.BoxGeometry(1.35,0.12,1.35),col,0,0.06,0,{cast:false}));
+  [-0.4,0,0.4].forEach(x=>g.add(mesh(new THREE.BoxGeometry(0.16,0.06,1.25),st.watered?0x6f4f34:0x9b7350,x,0.14,0,{cast:false})));
+  if(st.state==='planted'){const pm=plantMesh(st.crop,st.stage);pm.position.y=0.1;g.add(pm)}
+}
+
+/* ---------------- UI helpers ---------------- */
+const bubbleLayer=$('bubbles');
+const tmpV=new THREE.Vector3();
+function toScreen(obj,yOff){
+  obj.getWorldPosition(tmpV);tmpV.y+=yOff;tmpV.project(camera);
+  return {x:(tmpV.x*0.5+0.5)*innerWidth,y:(-tmpV.y*0.5+0.5)*innerHeight,vis:tmpV.z<1};
+}
+const floating=[];// {el,obj,yOff,until}
+function addBubble(obj,who,text,ms,small){
+  const el=document.createElement('div');el.className='bubble'+(small?' small':'');
+  el.innerHTML=(who?`<div class="who"></div>`:'')+'<div class="txt"></div>';
+  if(who)el.querySelector('.who').textContent=who;el.querySelector('.txt').textContent=text;
+  bubbleLayer.appendChild(el);
+  const b={el,obj,yOff:obj===player||obj.userData.kind==='npc'?1.85:1.3,until:ms?performance.now()+ms:Infinity};
+  floating.push(b);return b;
+}
+function removeBubble(b){const i=floating.indexOf(b);if(i>=0)floating.splice(i,1);b.el.remove()}
+function popText(obj,text,color){
+  const el=document.createElement('div');el.className='pop';el.textContent=text;if(color)el.style.color=color;
+  bubbleLayer.appendChild(el);const t0=performance.now();
+  floating.push({el,obj,yOff:1.4,until:t0+1100,pop:t0});
+}
+function log(msg){S.log.unshift(msg);S.log.length=Math.min(S.log.length,30);renderLog();save()}
+let logOpen=false;
+function renderLog(){
+  const ul=$('logList');ul.innerHTML='';
+  S.log.slice(0,logOpen?8:2).forEach(t=>{const li=document.createElement('li');
+    const m=t.match(/^(.+?)：(.*)$/);if(m){const b=document.createElement('b');b.textContent=m[1]+'：';li.appendChild(b);li.appendChild(document.createTextNode(m[2]))}else li.textContent=t;ul.appendChild(li)});
+}
+$('logToggle').addEventListener('click',()=>{logOpen=!logOpen;$('logCard').classList.toggle('open',logOpen);$('logToggle').textContent=logOpen?'收合':'展開';$('logToggle').setAttribute('aria-expanded',logOpen);renderLog()});
+
+function renderQuests(){
+  const ul=$('questList');ul.innerHTML='';
+  const open=QUESTS.filter(q=>!S.q[q.id]);
+  $('questCount').textContent=`${QUESTS.length-open.length}/${QUESTS.length} 完成`;
+  if(!open.length){const li=document.createElement('li');li.textContent='全部完成！好，你這又良善又忠心的僕人。（馬太福音 25:21）';ul.appendChild(li);return}
+  open.slice(0,3).forEach(q=>{const li=document.createElement('li');li.innerHTML='<i></i><span></span>';li.querySelector('span').textContent=q.text;
+    if(q.goal){const em=document.createElement('em');em.textContent=`${Math.min(S.c[q.c],q.goal)}/${q.goal}`;li.appendChild(em)}ul.appendChild(li)});
+}
+function completeQuest(id){
+  if(S.q[id])return;S.q[id]=true;const q=QUESTS.find(x=>x.id===id);
+  log(`任務完成：${q.text}`);popText(player,'✓ 任務完成','#5f8f4e');renderQuests();
+  if(QUESTS.every(x=>S.q[x.id]))setTimeout(()=>{addBubble(NPC.jesus.g,'耶穌・好牧人','好，你這又良善又忠心的僕人。（馬太福音 25:21）',7000);log('耶穌：好，你這又良善又忠心的僕人。')},900);
+}
+function bumpCount(k){S.c[k]++;QUESTS.forEach(q=>{if(q.c===k&&S.c[k]>=q.goal)completeQuest(q.id)});renderQuests()}
+function renderBag(){
+  $('nWheatSeed').textContent=S.inv.wheatSeed;$('nMustardSeed').textContent=S.inv.mustardSeed;
+  $('nWheat').textContent=S.inv.wheat;$('nMustard').textContent=S.inv.mustard;$('nBread').textContent=S.inv.bread;
+  $('seedWheat').setAttribute('aria-pressed',S.seed==='wheat');$('seedMustard').setAttribute('aria-pressed',S.seed==='mustard');
+}
+$('seedWheat').addEventListener('click',()=>{S.seed='wheat';renderBag();save()});
+$('seedMustard').addEventListener('click',()=>{S.seed='mustard';renderBag();save()});
+function fmtClock(){const h=Math.floor(S.min/60)%24,m=Math.floor(S.min%60/10)*10;$('clockText').textContent=`第 ${S.day} 天 ${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`}
+
+/* ---------------- dialog ---------------- */
+let dialog=null;// {npc,lines,i,bubble,done}
+function openDialog(id,lines,done){
+  closeDialog();const n=NPC[id];
+  dialog={id,lines,i:0,done};
+  dialog.bubble=addBubble(n.g,`${n.name}・${n.role}`,lines[0]);
+  const more=document.createElement('div');more.className='more';dialog.bubble.el.appendChild(more);updateMore();
+  log(`${n.name}：${lines[0]}`);
+}
+function updateMore(){dialog.bubble.el.querySelector('.more').textContent=dialog.i<dialog.lines.length-1?'點一下繼續 ▸':'點一下結束'}
+function advanceDialog(){
+  if(!dialog)return;dialog.i++;
+  if(dialog.i>=dialog.lines.length){const d=dialog.done;closeDialog();d&&d();return}
+  dialog.bubble.el.querySelector('.txt').textContent=dialog.lines[dialog.i];updateMore();
+  log(`${NPC[dialog.id].name}：${dialog.lines[dialog.i]}`);
+}
+function closeDialog(){if(dialog){removeBubble(dialog.bubble);dialog=null}}
+
+function talk(id){
+  const n=NPC[id];
+  if(id==='jesus'){
+    if(!S.q.talkJesus)return openDialog(id,['平安！歡迎來到這片牧場。','我是好牧人；好牧人為羊捨命。（約翰福音 10:11）','我有一隻羊走迷了，好像往西北邊的山丘去了。你能幫我找回牠嗎？','田裡的麥子也熟了，去收成吧。'],()=>completeQuest('talkJesus'));
+    if(S.lost==='following')return openDialog(id,['你找到牠了！帶牠回到羊圈吧，門在羊圈的南邊。']);
+    if(S.lost==='lost')return openDialog(id,['那隻迷途的羊還在西北邊的山丘那裡。'+JESUS_VERSES[S.jt++%JESUS_VERSES.length]]);
+    return openDialog(id,[JESUS_VERSES[S.jt++%JESUS_VERSES.length]]);
+  }
+  if(id==='peter'){
+    if(!S.q.talkPeter)return openDialog(id,['你好！我是彼得，本來是在加利利海打魚的。','主對我說：「來跟從我，我要叫你們得人如得魚一樣。」（馬太福音 4:19）','種田跟打魚一樣，要有耐心。每天記得澆水喔。'],()=>completeQuest('talkPeter'));
+    const L=['今天湖面很平靜。','有一次我們整夜打魚，甚麼也沒打著。主一句話，網就滿了。','累了就回家睡吧，明天田裡又會不一樣。'];
+    return openDialog(id,[L[S.pt++%L.length]]);
+  }
+  if(id==='martha'){
+    if(!S.q.giveMartha){
+      if(S.inv.wheat>=3)return openDialog(id,['你帶了小麥來！謝謝你。','我來做餅，這兩個給你帶著。'],()=>{S.inv.wheat-=3;S.inv.bread+=2;renderBag();popText(n.g,'+2 餅','#a0602f');completeQuest('giveMartha')});
+      return openDialog(id,['我是馬大，正想烤餅招待大家。',`可以幫我帶 3 束小麥來嗎？（你現在有 ${S.inv.wheat} 束）`]);
+    }
+    const L=['餅烤好了，香吧！','主說，不可少的只有一件。我還在學習放慢腳步。','我妹妹馬利亞又坐在主的腳前聽道了。'];
+    return openDialog(id,[L[S.mt++%L.length]]);
+  }
+}
+
+/* ---------------- actions ---------------- */
+function plotAction(i){
+  const st=S.plots[i],p=plots[i].g;
+  if(st.state==='grass'){st.state='tilled';popText(p,'耕地');log('你把一塊草地翻成了田。')}
+  else if(st.state==='tilled'){
+    const cr=CROPS[S.seed];
+    if(S.inv[cr.seed]<=0){popText(p,`沒有${cr.name}種子了`,'#c8584a');return}
+    S.inv[cr.seed]--;Object.assign(st,{state:'planted',crop:S.seed,stage:0});
+    popText(p,`種下${cr.name}`);bumpCount('planted');
+    if(S.seed==='mustard')log('你種下一粒芥菜種，這原是百種裡最小的。');
+    if(st.watered){}
+  }
+  else if(st.state==='planted'){
+    const cr=CROPS[st.crop];
+    if(st.stage>=cr.max){
+      st.state='tilled';st.crop=null;st.stage=0;st.watered=false;
+      if(cr===CROPS.wheat){S.inv.wheat++;S.inv.wheatSeed+=1;popText(p,'+1 小麥 +1 種子','#a8791f');bumpCount('harvestedWheat')}
+      else{S.inv.mustard++;S.inv.mustardSeed+=2;popText(p,'+1 芥菜 +2 種子','#5f8f4e')}
+      renderBag();
+    }else if(!st.watered){st.watered=true;popText(p,'澆水 💧'.replace(' 💧',''),'#3f7fa0');bumpCount('watered')}
+    else{popText(p,'今天澆過了，明天再來');}
+  }
+  rebuildPlot(i);renderBag();save();
+}
+function sheepAction(s){
+  if(s.lost&&S.lost==='lost'){S.lost='following';addBubble(s.g,'','咩～',1800,true);log('你找到那隻迷途的羊了！牠開始跟著你走。');popText(s.g,'♥','#d4616f');save();return}
+  addBubble(s.g,'',['咩～','咩咩！','（蹭蹭你）'][Math.floor(Math.random()*3)],1600,true);popText(s.g,'♥','#d4616f');
+}
+let sleeping=false;
+function goSleep(passOut){
+  if(sleeping)return;sleeping=true;closeDialog();
+  let grew=false;
+  S.plots.forEach((st,i)=>{if(st.state==='planted'&&st.watered&&st.stage<CROPS[st.crop].max){st.stage++;grew=true;
+      if(st.crop==='mustard'&&st.stage>=CROPS.mustard.max)completeQuest('mustard')}st.watered=false;});
+  S.day++;S.min=360;
+  $('sleepTitle').textContent=`第 ${S.day} 天`;
+  $('sleepVerse').textContent=(passOut?'你在田邊累得睡著了。':'')+(grew?GROW_VERSE:NIGHT_VERSES[S.day%NIGHT_VERSES.length]);
+  $('sleep').classList.add('on');
+  setTimeout(()=>{S.plots.forEach((_,i)=>rebuildPlot(i));player.position.set(-8,0,-3.6);player.rotation.y=0;target=null;fmtClock();applyTime();
+    log(grew?`第 ${S.day} 天的早晨，田裡的作物長大了。`:`第 ${S.day} 天的早晨。`);save()},900);
+  setTimeout(()=>{$('sleep').classList.remove('on');sleeping=false},2600);
+}
+$('btnHome').addEventListener('click',()=>{target={x:-8,z:-3.6,reach:0.6,act:()=>goSleep(false)}});
+let resetArm=0;
+$('btnReset').addEventListener('click',()=>{
+  const b=$('btnReset');
+  if(performance.now()-resetArm<3000){S=freshState();try{localStorage.removeItem(SAVE_KEY)}catch(e){}applyState();b.textContent='重新開始';b.classList.remove('warn');resetArm=0;return}
+  resetArm=performance.now();b.textContent='再按一次確認';b.classList.add('warn');
+  setTimeout(()=>{if(performance.now()-resetArm>=2900){b.textContent='重新開始';b.classList.remove('warn')}},3000);
+});
+
+/* ---------------- input ---------------- */
+let target=null;// {x,z,reach,act,follow}
+const ray=new THREE.Raycaster(),ndc=new THREE.Vector2();
+const ring=mesh(new THREE.RingGeometry(0.3,0.42,28),0xffffff,0,0.04,0,{cast:false});ring.rotation.x=-PI/2;ring.material=new THREE.MeshBasicMaterial({color:0xffffff,transparent:true,opacity:0});scene.add(ring);
+let ringT=0;
+function findKind(o){while(o){if(o.userData&&o.userData.kind)return o;o=o.parent}return null}
+function tap(cx,cy){
+  if(sleeping)return;
+  if(dialog){advanceDialog();return}
+  const r=renderer.domElement.getBoundingClientRect();
+  ndc.set((cx-r.left)/r.width*2-1,-(cy-r.top)/r.height*2+1);ray.setFromCamera(ndc,camera);
+  const hits=ray.intersectObjects(clickables,true);
+  if(hits.length){
+    const o=findKind(hits[0].object);const k=o.userData.kind;
+    if(k==='plot'){const i=o.userData.ref;target={x:o.position.x,z:o.position.z,reach:1.15,act:()=>plotAction(i)};showRing(o.position.x,o.position.z);return}
+    if(k==='npc'){const id=o.userData.id;target={x:o.position.x,z:o.position.z,reach:1.5,act:()=>talk(id)};return}
+    if(k==='sheep'){const s=o.userData.ref;target={follow:s.g,reach:1.25,act:()=>sheepAction(s)};return}
+    if(k==='house'){target={x:-8,z:-3.6,reach:0.6,act:()=>goSleep(false)};showRing(-8,-3.6);return}
+  }
+  const g=ray.intersectObject(ground);
+  if(g.length){const p=g[0].point;target={x:clampX(p.x),z:clampZ(p.z),reach:0.08};showRing(target.x,target.z)}
+}
+function showRing(x,z){ring.position.set(x,0.04,z);ringT=1}
+const clampX=x=>Math.max(-19,Math.min(19,x)),clampZ=z=>Math.max(-16.5,Math.min(13,z));
+let down=null;
+const cv=renderer.domElement;
+cv.addEventListener('pointerdown',e=>{down={x:e.clientX,y:e.clientY}});
+cv.addEventListener('pointerup',e=>{if(down&&Math.hypot(e.clientX-down.x,e.clientY-down.y)<12)tap(e.clientX,e.clientY);down=null});
+bubbleLayer.addEventListener('pointerup',()=>{});
+const keys={};
+addEventListener('keydown',e=>{if(e.target.tagName==='BUTTON'&&(e.key===' '||e.key==='Enter'))return;keys[e.key.toLowerCase()]=true;if((e.key===' '||e.key==='Enter')&&dialog){advanceDialog();e.preventDefault()}});
+addEventListener('keyup',e=>{keys[e.key.toLowerCase()]=false});
+
+/* ---------------- time & light ---------------- */
+const KEYS=[[0,0x2e3655,0.15,0.35],[5,0x3c4468,0.2,0.4],[6,0xf3d6bf,0.55,0.65],[8.5,0xcfe6ee,0.8,0.78],[16.5,0xcfe6ee,0.8,0.78],[18.5,0xf2c6a5,0.55,0.62],[20.5,0x5d6a92,0.28,0.42],[24,0x2e3655,0.15,0.35]];
+const cA=new THREE.Color(),cB=new THREE.Color();
+function applyTime(){
+  const h=(S.min/60)%24;let i=0;while(i<KEYS.length-2&&KEYS[i+1][0]<=h)i++;
+  const a=KEYS[i],b=KEYS[i+1],t=Math.min(1,(h-a[0])/(b[0]-a[0]||1));
+  cA.setHex(a[1]);cB.setHex(b[1]);cA.lerp(cB,t);
+  scene.background.copy(cA);scene.fog.color.copy(cA);
+  sun.intensity=a[2]+(b[2]-a[2])*t;hemi.intensity=a[3]+(b[3]-a[3])*t;
+  document.body.style.background='#'+cA.getHexString();
+}
+
+/* ---------------- loop ---------------- */
+function resolve(pos,r){
+  for(const o of obstacles){const dx=pos.x-o.x,dz=pos.z-o.z,d=Math.hypot(dx,dz),m=o.r+r;
+    if(d<m&&d>1e-4){pos.x=o.x+dx/d*m;pos.z=o.z+dz/d*m}}
+}
+function moveToward(obj,tx,tz,speed,dt){
+  const dx=tx-obj.position.x,dz=tz-obj.position.z,d=Math.hypot(dx,dz);
+  if(d<1e-3)return 0;const st=Math.min(d,speed*dt);
+  obj.position.x+=dx/d*st;obj.position.z+=dz/d*st;
+  const want=Math.atan2(dx,dz);let diff=want-obj.rotation.y;diff=Math.atan2(Math.sin(diff),Math.cos(diff));obj.rotation.y+=diff*Math.min(1,dt*10);
+  return st;
+}
+function faceToward(obj,x,z,dt){const want=Math.atan2(x-obj.position.x,z-obj.position.z);let diff=want-obj.rotation.y;diff=Math.atan2(Math.sin(diff),Math.cos(diff));obj.rotation.y+=diff*Math.min(1,dt*4)}
+const inPen=(x,z)=>x>PEN.x0+0.3&&x<PEN.x1-0.3&&z>PEN.z0+0.3&&z<PEN.z1-0.2;
+let last=performance.now(),walkPh=0,ambientT=8;
+const camPos=new THREE.Vector3(),camLook=new THREE.Vector3();
+function frame(now){
+  const dt=Math.min(0.05,(now-last)/1000);last=now;
+  // clock
+  if(!dialog&&!sleeping){S.min+=dt*4;if(S.min>=24*60)goSleep(true);}
+  fmtClock();applyTime();
+  // keyboard
+  let kx=(keys['d']||keys['arrowright']?1:0)-(keys['a']||keys['arrowleft']?1:0),kz=(keys['s']||keys['arrowdown']?1:0)-(keys['w']||keys['arrowup']?1:0);
+  let moving=false;
+  if(!sleeping&&!dialog&&(kx||kz)){target=null;const l=Math.hypot(kx,kz);moving=moveToward(player,player.position.x+kx/l,player.position.z+kz/l,3.4,dt)>0}
+  else if(target&&!sleeping){
+    const tx=target.follow?target.follow.position.x:target.x,tz=target.follow?target.follow.position.z:target.z;
+    const d=Math.hypot(tx-player.position.x,tz-player.position.z);
+    if(d>target.reach){moving=moveToward(player,tx,tz,3.4,dt)>0;if(d>target.reach&&!moving){}}
+    else{faceToward(player,tx,tz,1);const a=target.act;target=null;a&&a()}
+  }
+  player.position.x=clampX(player.position.x);player.position.z=clampZ(player.position.z);
+  resolve(player.position,0.35);
+  walkPh+=dt*(moving?12:2);
+  const pb=player.userData.body;pb.position.y=moving?Math.abs(Math.sin(walkPh))*0.08:Math.sin(walkPh)*0.01;pb.rotation.z=moving?Math.sin(walkPh)*0.06:0;
+  // npcs
+  for(const id in NPC){const n=NPC[id],g=n.g,d=Math.hypot(player.position.x-g.position.x,player.position.z-g.position.z);
+    if(d<4||(dialog&&dialog.id===id))faceToward(g,player.position.x,player.position.z,dt);else{let diff=n.home-g.rotation.y;diff=Math.atan2(Math.sin(diff),Math.cos(diff));g.rotation.y+=diff*dt*2}
+    g.userData.body.position.y=Math.sin(now/600+g.position.x)*0.015;
+    const talking=dialog&&dialog.id===id;g.userData.body.rotation.z=talking?Math.sin(now/180)*0.03:0;
+  }
+  // sheep
+  for(const s of flock){
+    const g=s.g;let mv=0;
+    if(s.lost&&S.lost==='following'){
+      const d=Math.hypot(player.position.x-g.position.x,player.position.z-g.position.z);
+      if(d>1.4)mv=moveToward(g,player.position.x,player.position.z,Math.min(4,1.5+d),dt);
+      if(inPen(g.position.x,g.position.z)){S.lost='home';s.lost=false;sheepHome()}
+    }else if(s.lost&&S.lost==='lost'){
+      s.wait-=dt;if(s.wait<=0){s.tx=-15.8+rand(-1,1);s.tz=-12.8+rand(-1,1);s.wait=rand(3,6)}
+      mv=moveToward(g,s.tx,s.tz,0.4,dt);
+      if(Math.random()<dt*0.12)addBubble(g,'','咩……',1500,true);
+    }else{
+      s.wait-=dt;
+      if(s.wait<=0&&Math.hypot(s.tx-g.position.x,s.tz-g.position.z)<0.1){s.tx=rand(PEN.x0+1,PEN.x1-1);s.tz=rand(PEN.z0+1,PEN.z1-1);s.wait=rand(2,6)}
+      if(s.wait<=0)mv=moveToward(g,s.tx,s.tz,s.speed,dt);
+      if(!inPen(g.position.x,g.position.z)&&S.lost!=='following'){}
+    }
+    s.phase+=dt*(mv?10:1.5);
+    g.userData.body.position.y=mv?Math.abs(Math.sin(s.phase))*0.05:0;
+    g.userData.head.rotation.x=mv?0:Math.sin(s.phase*0.5)*0.15+0.15;
+  }
+  // ambient sheep chatter
+  ambientT-=dt;if(ambientT<=0){ambientT=rand(9,16);const s=flock[Math.floor(rand(0,6))];if(s&&!s.lost)addBubble(s.g,'','咩～',1500,true)}
+  // ring
+  if(ringT>0){ringT-=dt*1.6;ring.material.opacity=Math.max(0,ringT)*0.8;ring.scale.setScalar(1+(1-ringT)*0.5)}
+  // light & camera follow
+  const p=player.position,narrow=innerWidth<innerHeight;
+  const dist=narrow?1.2:0.82;
+  camLook.lerp(tmpL.set(p.x,0.6,p.z),Math.min(1,dt*4));
+  camPos.set(camLook.x,camLook.y+9.5*dist,camLook.z+13*dist);
+  camera.position.copy(camPos);camera.lookAt(camLook);
+  sun.position.set(p.x+9,18,p.z+7);sun.target.position.set(p.x,0,p.z);
+  renderer.render(scene,camera);
+  // bubbles
+  for(let i=floating.length-1;i>=0;i--){const b=floating[i];
+    if(now>b.until){b.el.remove();floating.splice(i,1);continue}
+    let yo=b.yOff;if(b.pop){const k=(now-b.pop)/1100;yo+=k*0.9;b.el.style.opacity=String(1-k*k)}
+    const s=toScreen(b.obj,yo);const hh=b.el.offsetHeight+6,ww=b.el.offsetWidth/2+8;s.y=Math.max(hh,s.y);s.x=Math.min(innerWidth-ww,Math.max(ww,s.x));b.el.style.transform=`translate(${s.x}px,${s.y}px) translate(-50%,-100%)`;b.el.style.visibility=s.vis?'visible':'hidden';
+  }
+  requestAnimationFrame(frame);
+}
+const tmpL=new THREE.Vector3();
+function sheepHome(){
+  log('迷途的羊回到羊圈了！');popText(lostSheep.g,'♥ 回家了','#d4616f');
+  completeQuest('lostSheep');
+  setTimeout(()=>{addBubble(NPC.jesus.g,'耶穌・好牧人','我失去的羊已經找著了，你們和我一同歡喜吧！（路加福音 15:6）',7000);
+    log('耶穌：我失去的羊已經找著了，你們和我一同歡喜吧！');S.inv.mustardSeed+=1;renderBag();log('耶穌送你 1 粒芥菜種。');save()},700);
+  save();
+}
+
+function resize(){renderer.setSize(innerWidth,innerHeight,false);camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix()}
+addEventListener('resize',resize);
+
+function applyState(){
+  closeDialog();floating.slice().forEach(removeBubble);
+  S.plots.forEach((_,i)=>rebuildPlot(i));
+  if(S.lost==='home'){lostSheep.lost=false;lostSheep.g.position.set(9,0,-5)}
+  else{lostSheep.lost=true;lostSheep.g.position.set(-15.8,0,-12.8);if(S.lost==='following')S.lost='lost'}
+  player.position.set(-1,0,2.5);target=null;
+  camLook.set(player.position.x,0.6,player.position.z);
+  renderLog();renderQuests();renderBag();fmtClock();applyTime();
+  if(!S.q.talkJesus)addBubble(NPC.jesus.g,'耶穌・好牧人','平安！到井邊來找我吧。',9000);
+}
+function start(data){
+  const d=(data&&data.S&&data.S.v===1)?data.S:load();
+  if(d){S=Object.assign(freshState(),d)}
+  resize();applyState();
+  try{window.claude&&window.claude.hot&&window.claude.hot.snapshot&&window.claude.hot.snapshot(()=>({S}))}catch(e){}
+  requestAnimationFrame(t=>{last=t;frame(t)});
+}
+try{if(window.claude&&window.claude.hot&&window.claude.hot.ready)window.claude.hot.ready(start);else start((window.claude&&window.claude.hot&&window.claude.hot.data)||{})}catch(e){start({})}
+})();
+</script>
+</body>
+</html>
